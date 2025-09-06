@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Locale & Keyboard Test</title>
+  <style>
+    :root {
+      --bg: #0b0c0f;
+      --fg: #e6e8ea;
+      --muted: #9aa3ab;
+      --accent: #4f8cff;
+      --card: #14171a;
+      --border: #262a30;
+    }
+    body {
+      margin: 0;
+      font-family: system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--fg);
+      line-height: 1.45;
+    }
+    .wrap { max-width: 1200px; margin: 0 auto; padding: 16px; }
+    h1 { font-size: 28px; margin: 0 0 12px; }
+    h2 { font-size: 20px; margin: 20px 0 8px; }
+    .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 16px; margin: 16px 0; }
+    select, input, button {
+      background: var(--card); color: var(--fg); border: 1px solid var(--border);
+      padding: 8px 12px; border-radius: 8px; font-size: 14px;
+    }
+    .kb-row { display:flex; gap:4px; margin:2px 0; }
+    .kb-key {
+      text-align: center;
+      padding: 10px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: #14171a;
+      min-width: 30px;
+      flex: 1;
+      font-size: 13px;
+      user-select: none;
+    }
+    #keyLog {
+      background:#0f1317; padding:8px; border-radius:8px; max-height:150px; overflow:auto;
+      font-family: monospace; font-size: 13px;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>Locale & Keyboard Test</h1>
+
+    <!-- Locale section -->
+    <div class="card">
+      <h2>Locale Info</h2>
+      <p><strong>Browser locale:</strong> <span id="browserLocale"></span></p>
+      <p><strong>Time zone:</strong> <span id="tz"></span></p>
+      <p><strong>Short date:</strong> <span id="shortDate"></span></p>
+      <p><strong>Currency (GBP):</strong> <span id="currency"></span></p>
+    </div>
+
+    <!-- Keyboard section -->
+    <div class="card">
+      <h2>Keyboard Layout</h2>
+      <label>Layout:
+        <select id="kbLayout"></select>
+      </label>
+      <p><small>Press some keys to auto-detect layout (e.g. try <code>Shift+2</code> or <code>\</code>).</small></p>
+      <div id="keyboard" style="margin-top:16px;"></div>
+      <div style="margin-top:12px;">
+        <strong>Key log:</strong>
+        <pre id="keyLog"></pre>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // --- Locale demo ---
+    const browserLocale = navigator.language || 'en-US';
+    document.getElementById("browserLocale").textContent = browserLocale;
+    document.getElementById("tz").textContent =
+      Intl.DateTimeFormat().resolvedOptions().timeZone;
+    document.getElementById("shortDate").textContent =
+      new Intl.DateTimeFormat(browserLocale, { dateStyle: 'short' }).format(new Date());
+    document.getElementById("currency").textContent =
+      new Intl.NumberFormat(browserLocale, { style: 'currency', currency: 'GBP' }).format(1234.56);
+
+    // --- Keyboard layouts ---
+    const layouts = {
+      "en-US": [
+        ["Backquote ~ `","Digit1 ! 1","Digit2 @ 2","Digit3 # 3","Digit4 $ 4","Digit5 % 5","Digit6 ^ 6","Digit7 & 7","Digit8 * 8","Digit9 ( 9","Digit0 ) 0","Minus _ -","Equal + =","Backspace ←"],
+        ["Tab ↹","KeyQ Q","KeyW W","KeyE E","KeyR R","KeyT T","KeyY Y","KeyU U","KeyI I","KeyO O","KeyP P","BracketLeft { [","BracketRight } ]","Backslash | \\"],
+        ["CapsLock ⇪","KeyA A","KeyS S","KeyD D","KeyF F","KeyG G","KeyH H","KeyJ J","KeyK K","KeyL L","Semicolon : ;","Quote \" '","Enter ⏎"],
+        ["ShiftLeft ⇧","KeyZ Z","KeyX X","KeyC C","KeyV V","KeyB B","KeyN N","KeyM M","Comma < ,","Period > .","Slash ? /","ShiftRight ⇧"],
+        ["ControlLeft Ctrl","MetaLeft ⌘","AltLeft Alt","Space Space","AltRight Alt","MetaRight ⌘","ContextMenu ☰","ControlRight Ctrl"]
+      ],
+      "en-GB": [
+        ["Backquote ¬ `","Digit1 ! 1","Digit2 \" 2","Digit3 £ 3","Digit4 $ 4","Digit5 % 5","Digit6 ^ 6","Digit7 & 7","Digit8 * 8","Digit9 ( 9","Digit0 ) 0","Minus _ -","Equal + =","Backspace ←"],
+        ["Tab ↹","KeyQ Q","KeyW W","KeyE E","KeyR R","KeyT T","KeyY Y","KeyU U","KeyI I","KeyO O","KeyP P","BracketLeft { [","BracketRight } ]","Backslash | #"],
+        ["CapsLock ⇪","KeyA A","KeyS S","KeyD D","KeyF F","KeyG G","KeyH H","KeyJ J","KeyK K","KeyL L","Semicolon : ;","Quote @ '","Enter ⏎"],
+        ["ShiftLeft ⇧","KeyZ Z","KeyX X","KeyC C","KeyV V","KeyB B","KeyN N","KeyM M","Comma < ,","Period > .","Slash ? /","ShiftRight ⇧"],
+        ["ControlLeft Ctrl","MetaLeft ⌘","AltLeft Alt","Space Space","AltRight Alt","MetaRight ⌘","ContextMenu ☰","ControlRight Ctrl"]
+      ],
+      "de-DE": [
+        ["Backquote ^ °","Digit1 ! 1","Digit2 \" 2","Digit3 § 3","Digit4 $ 4","Digit5 % 5","Digit6 & 6","Digit7 / 7","Digit8 ( 8","Digit9 ) 9","Digit0 = 0","Minus ? ß","Equal ` ´","Backspace ←"],
+        ["Tab ↹","KeyQ Q","KeyW W","KeyE E","KeyR R","KeyT T","KeyZ Z","KeyU U","KeyI I","KeyO O","KeyP P","BracketLeft ü Ü","BracketRight + *","Backslash # '"],
+        ["CapsLock ⇪","KeyA A","KeyS S","KeyD D","KeyF F","KeyG G","KeyH H","KeyJ J","KeyK K","KeyL L","Semicolon ö Ö","Quote ä Ä","Enter ⏎"],
+        ["ShiftLeft ⇧","KeyY Y","KeyX X","KeyC C","KeyV V","KeyB B","KeyN N","KeyM M","Comma ; ,","Period : .","Slash - _","ShiftRight ⇧"],
+        ["ControlLeft Ctrl","MetaLeft ⌘","AltLeft Alt","Space Space","AltRight AltGr","MetaRight ⌘","ContextMenu ☰","ControlRight Ctrl"]
+      ],
+      "fr-FR": [
+        ["Backquote ²","Digit1 & 1","Digit2 é 2","Digit3 \" 3","Digit4 ' 4","Digit5 ( 5","Digit6 - 6","Digit7 è 7","Digit8 _ 8","Digit9 ç 9","Digit0 à 0","Minus ) °","Equal = +","Backspace ←"],
+        ["Tab ↹","KeyA A","KeyZ Z","KeyE E","KeyR R","KeyT T","KeyY Y","KeyU U","KeyI I","KeyO O","KeyP P","BracketLeft ^ ¨","BracketRight $ £","Backslash * µ"],
+        ["CapsLock ⇪","KeyQ Q","KeyS S","KeyD D","KeyF F","KeyG G","KeyH H","KeyJ J","KeyK K","KeyL L","Semicolon m M","Quote ù %","Enter ⏎"],
+        ["ShiftLeft ⇧","KeyW W","KeyX X","KeyC C","KeyV V","KeyB B","KeyN N","KeyM M","Comma , ?","Period ; .","Slash : /","ShiftRight ⇧"],
+        ["ControlLeft Ctrl","MetaLeft ⌘","AltLeft Alt","Space Space","AltRight AltGr","MetaRight ⌘","ContextMenu ☰","ControlRight Ctrl"]
+      ],
+      "es-ES": [
+        ["Backquote º ª","Digit1 ! 1","Digit2 \" 2","Digit3 · 3","Digit4 $ 4","Digit5 % 5","Digit6 & 6","Digit7 / 7","Digit8 ( 8","Digit9 ) 9","Digit0 = 0","Minus ? '","Equal ¿ ¡","Backspace ←"],
+        ["Tab ↹","KeyQ Q","KeyW W","KeyE E","KeyR R","KeyT T","KeyY Y","KeyU U","KeyI I","KeyO O","KeyP P","BracketLeft ` ^","BracketRight + *","Backslash ç Ç"],
+        ["CapsLock ⇪","KeyA A","KeyS S","KeyD D","KeyF F","KeyG G","KeyH H","KeyJ J","KeyK K","KeyL L","Semicolon ñ Ñ","Quote ´ ¨","Enter ⏎"],
+        ["ShiftLeft ⇧","KeyZ Z","KeyX X","KeyC C","KeyV V","KeyB B","KeyN N","KeyM M","Comma , ;","Period . :","Slash - _","ShiftRight ⇧"],
+        ["ControlLeft Ctrl","MetaLeft ⌘","AltLeft Alt","Space Space","AltRight AltGr","MetaRight ⌘","ContextMenu ☰","ControlRight Ctrl"]
+      ]
+      // You can extend: IT, NL, SE, NO, JP similarly
+    };
+
+    // --- Render keyboard ---
+    function renderKeyboard(layout) {
+      const kb = document.getElementById("keyboard");
+      kb.innerHTML = "";
+      layouts[layout].forEach(row => {
+        const rowDiv = document.createElement("div");
+        rowDiv.className = "kb-row";
+        row.forEach(key => {
+          const [code, ...labelParts] = key.split(" ");
+          const div = document.createElement("div");
+          div.textContent = labelParts.join(" ");
+          div.dataset.code = code;
+          div.className = "kb-key";
+          rowDiv.appendChild(div);
+        });
+        kb.appendChild(rowDiv);
+      });
+    }
+
+    // --- Populate dropdown ---
+    const sel = document.getElementById("kbLayout");
+    Object.keys(layouts).forEach(l => {
+      const opt = document.createElement("option");
+      opt.value = l;
+      opt.textContent = l;
+      sel.appendChild(opt);
+    });
+
+    let activeLayout = "en-US"; // default fallback
+    renderKeyboard(activeLayout);
+    sel.value = activeLayout;
+
+    sel.addEventListener("change", e => {
+      activeLayout = e.target.value;
+      renderKeyboard(activeLayout);
+    });
+
+    // --- Key logging & detection ---
+    const log = document.getElementById("keyLog");
+    window.addEventListener("keydown", e => {
+      const el = document.querySelector(`[data-code="${e.code}"]`);
+      if (el) {
+        el.style.background = "#4f8cff";
+        el.style.color = "#fff";
+        setTimeout(() => {
+          el.style.background = "#14171a";
+          el.style.color = "#e6e8ea";
+        }, 200);
+      }
+      log.textContent = `${e.code} → "${e.key}"\n` + log.textContent;
+
+      // Simple detection: Shift+2 differences
+      if (e.shiftKey && e.code === "Digit2") {
+        if (e.key === "@") { activeLayout = "en-US"; }
+        if (e.key === "\"") { activeLayout = "en-GB"; }
+        if (e.key === "²") { activeLayout = "fr-FR"; }
+        if (e.key === "\"") { activeLayout = "de-DE"; }
+        renderKeyboard(activeLayout);
+        sel.value = activeLayout;
+      }
+    });
+  </script>
+</body>
+</html>
